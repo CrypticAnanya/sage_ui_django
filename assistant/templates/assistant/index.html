@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sage UI</title>
+  <style>
+    body {
+      font-family: Orbitron, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: linear-gradient(270deg, #ff6ec4, #7873f5, #4ade80, #facc15);
+      background-size: 800% 800%;
+      animation: gradientShift 15s ease infinite;
+    }
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .card {
+      background: rgba(0, 0, 0, 0.8);
+      padding: 40px;
+      border-radius: 20px;
+      color: #0ef;
+      text-align: center;
+      box-shadow: 0 0 20px #0ef;
+    }
+    .reply-box {
+      margin-top: 20px;
+      padding: 15px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(0, 255, 255, 0.2);
+      color: #c1faff;
+      border-radius: 12px;
+    }
+  </style>
+
+
+<script>
+  function startRecognition() {
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = 'en-US';
+    recognition.start();
+
+    recognition.onresult = function(event) {
+      const transcript = event.results[0][0].transcript;
+      document.getElementById("transcript").innerText = transcript;
+
+      // Optional: Send the transcript to Django backend
+      fetch('/process_voice/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+        body: JSON.stringify({ command: transcript })
+      });
+    };
+  }
+</script>
+
+</head>
+<body>
+  <div class="card">
+    <h1>Sage AI Assistant</h1>
+      <button onclick="startRecognition()">🎙 Speak</button>
+      <br>
+<div id="transcript">Your command will appear here..
+  </div>
+
+  <script>
+    function ask() {
+      const msg = prompt("Enter your message:");
+      if (!msg) return;
+      fetch("/ask/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "X-CSRFToken": '{{ csrf_token }}'
+        },
+        body: new URLSearchParams({ 'message': msg })
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("reply").innerText = data.reply;
+      });
+    }
+  </script>
+</body>
+</html>
